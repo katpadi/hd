@@ -12,13 +12,11 @@ WebFontConfig = {
 
 
 function preload() {
-
     //  Load the Google WebFont Loader script
     game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
-    
-    game.load.image('bullet', 'assets/bullet.png');
-    game.load.image('enemyBullet', 'assets/enemy-bullet.png');
-    game.load.spritesheet('invader', 'assets/hearts.png', 32, 32);
+    game.load.image('bullet', 'assets/fiyah.png');
+    game.load.image('enemyBullet', 'assets/heart.png');
+    game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/player.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
     game.load.image('starfield', 'assets/starfield.png');
@@ -53,13 +51,24 @@ var levelText;
 var introText;
 
 function create() {
+    //scaling options
+    this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+	this.scale.minWidth = 240;
+	this.scale.minHeight = 170;
+	this.scale.maxWidth = 800;
+	this.scale.maxHeight = 600;
+ 
+	//screen size will be set automatically
+	this.scale.updateLayout(true);
 
+    game.scale.pageAlignHorizontally = true;
+    
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
     //  The scrolling starfield background
     starfield = game.add.tileSprite(0, 0, 800, 600, 'starfield');
     
-    introText = game.add.text(game.world.centerX, 400, 'Click To Start', { font: "40px Press Start 2P", fill: "#fff", align: "center" });
+    introText = game.add.text(game.world.centerX, 400, 'Click To Start', { font: "30px Press Start 2P", fill: "#FFCC33", align: "center" });
     introText.anchor.setTo(0.5, 0.5);
     
     // Sound
@@ -77,7 +86,9 @@ function create() {
     enemyBullets.enableBody = true;
     enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-    game.input.onTap.addOnce(actuallyStartGame,this);
+    game.input.onTap.addOnce(actuallyStartGame, this);
+    game.input.keyboard.onDownCallback = actuallyStartGame;
+
     
     //  The destroyer!
     player = game.add.sprite(400, 500, 'ship');
@@ -106,15 +117,15 @@ function create() {
     game.add.text(game.world.width - 100, 10, 'Lives : ', { font: '10px Press Start 2P', fill: '#fff' });
 
     //  Text
-    stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '25px Press Start 2P', fill: '#fff', align: "center" });
+    stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '25px Press Start 2P', fill: '#FFCC33', align: "center" });
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
 
     for (var i = 0; i < 3; i++) 
     {
-        var ship = lives.create(game.world.width - 100 + (30 * i), 60, 'ship');
+        var ship = lives.create(game.world.width - 100 + (30 * i), 50, 'ship');
         ship.anchor.setTo(0.5, 0.5);
-        ship.angle = 90;
+        ship.angle = 45;
         ship.alpha = 0.4;
     }
 
@@ -126,9 +137,11 @@ function create() {
     //  And some controls to play the game with
     cursors = game.input.keyboard.createCursorKeys();
     fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    //game.input.onDown.add(flap);
 }
 
 function actuallyStartGame() {
+    game.input.keyboard.onDownCallback = null;
     introText.visible = false;
     
     // Sound
@@ -156,17 +169,18 @@ function createAliens () {
         {
             var alien = hearts.create(x * 48, y * 50, 'invader');
             alien.anchor.setTo(0.5, 0.5);
-            alien.animations.add('fly', [ 0, 1, 2, 3 ], 20, true);
+            alien.animations.add('fly', [ 0,1, 2, 1], 2, true);
             alien.play('fly');
             alien.body.moves = false;
         }
     }
 
     hearts.x = 100;
-    hearts.y = 50;
+    hearts.y = 80;
 
-    //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to, rather than the invaders directly.
-    var tween = game.add.tween(hearts).to( { x: 200 }, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+    //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to,
+    // rather than the invaders directly.
+    var tween = game.add.tween(hearts).to( { x: 250 }, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
 
     //  When the tween loops it calls descend
     tween.onLoop.add(descend, this);
@@ -187,7 +201,6 @@ function descend() {
 }
 
 function update() {
-
     //  Scroll the background
     starfield.tilePosition.y += 2;
 
@@ -253,13 +266,16 @@ function collisionHandler (bullet, alien) {
         score += 1000;
         scoreText.text = scoreString + score;
 
-        enemyBullets.callAll('kill',this);
+        enemyBullets.forEach(function (c) { c.kill(); });
+        
         level++; 
         
-        stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick to level up.";
+        stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
         //the "click to restart" handler
+        var nextLevelBtn = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+        nextLevelBtn.onDown.addOnce(nextLevel, this);
         game.input.onTap.addOnce(nextLevel,this);
     }
 
@@ -286,7 +302,9 @@ function enemyHitsPlayer (player,bullet) {
     if (lives.countLiving() < 1)
     {
         player.kill();
-        enemyBullets.callAll('kill');
+        // enemyBullets.callAll('kill');
+        
+        enemyBullets.forEach(function (c) { c.kill(); });
 
         stateText.text="YOU SUCK.\nClick to restart.";
         stateText.visible = true;
@@ -319,9 +337,9 @@ function enemyFires () {
         // randomly select one of them
         var shooter=livingEnemies[random];
         // And fire the bullet from this enemy
-        enemyBullet.reset(shooter.body.x, shooter.body.y);
+        enemyBullet.reset(shooter.body.x, shooter.body.y + 10);
 
-        game.physics.arcade.moveToObject(enemyBullet,player,120);
+        game.physics.arcade.moveToObject(enemyBullet,player, (level * 100) );
         firingTimer = game.time.now + 2000;
     }
 
@@ -338,6 +356,7 @@ function fireBullet () {
         if (bullet)
         {
             //  And fire it
+            bullet.angle = -90;
             bullet.reset(player.x, player.y + 8);
             bullet.body.velocity.y = -400;
             bulletTime = game.time.now + 300;
