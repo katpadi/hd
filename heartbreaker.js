@@ -1,5 +1,4 @@
-
-var game = new Phaser.Game(800, 600, Phaser.AUTO, 'screen', { preload: preload, create: create, update: update, render: render });
+var game = new Phaser.Game(800, 600, Phaser.AUTO, 'screen', { preload: preload, create: create, update: update });
 
 //  The Google WebFont Loader will look for this object, so create it before loading the script.
 WebFontConfig = {
@@ -9,7 +8,6 @@ WebFontConfig = {
     }
 
 };
-
 
 function preload() {
     //  Load the Google WebFont Loader script
@@ -36,6 +34,7 @@ var shot;
 var bulletTime = 0;
 var cursors;
 var fireButton;
+var creditsButton;
 var explosions;
 var starfield;
 var score = 0;
@@ -50,32 +49,46 @@ var level = 1;
 var levelText;
 var introText;
 
+// Credits
+var text;
+var index = 0;
+var line = '';
+var content = [
+    " ",
+    "Thanks for playing.",
+    " ",
+    "This game is called...",
+    " ",
+    "The Heart Breaker",
+];
+
+
 function create() {
     //scaling options
     this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-	this.scale.minWidth = 240;
-	this.scale.minHeight = 170;
-	this.scale.maxWidth = 800;
-	this.scale.maxHeight = 600;
- 
-	//screen size will be set automatically
-	this.scale.updateLayout(true);
+    this.scale.minWidth = 240;
+    this.scale.minHeight = 170;
+    this.scale.maxWidth = 800;
+    this.scale.maxHeight = 600;
+
+    //screen size will be set automatically
+    this.scale.updateLayout(true);
 
     game.scale.pageAlignHorizontally = true;
-    
+
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
     //  The scrolling starfield background
     starfield = game.add.tileSprite(0, 0, 800, 600, 'starfield');
-    
+
     introText = game.add.text(game.world.centerX, 400, 'Click To Start', { font: "30px Press Start 2P", fill: "#FFCC33", align: "center" });
     introText.anchor.setTo(0.5, 0.5);
-    
+
     // Sound
     bass = game.add.audio('bass');
     shot = game.add.audio('shot');
     hit = game.add.audio('hit');
-    
+
     //  Our bullet group
     bullets = game.add.group();
     bullets.enableBody = true;
@@ -89,14 +102,13 @@ function create() {
     game.input.onTap.addOnce(actuallyStartGame, this);
     game.input.keyboard.onDownCallback = actuallyStartGame;
 
-    
     //  The destroyer!
     player = game.add.sprite(400, 500, 'ship');
     player.anchor.setTo(0.5, 0.5);
 
     game.physics.enable(player, Phaser.Physics.ARCADE);
     // Do not allow passing through world bounds
-    player.body.collideWorldBounds = true;    
+    player.body.collideWorldBounds = true;
 
     //  The hearts!
     hearts = game.add.group();
@@ -104,26 +116,29 @@ function create() {
     hearts.physicsBodyType = Phaser.Physics.ARCADE;
 
     createAliens();
-    
+
     //  The score
-    scoreString = '<3s Destroyed : ';
+    scoreString = 'Hearts Destroyed: ';
     scoreText = game.add.text(10, 10, scoreString + score, { font: '10px Press Start 2P', fill: '#fff' });
-    
+
     // Level
     levelText = game.add.text(10, 30, 'Level: ' + level, { font: '11px Press Start 2P', fill: '#fff' });
 
     //  Lives
     lives = game.add.group();
-    game.add.text(game.world.width - 100, 10, 'Lives : ', { font: '10px Press Start 2P', fill: '#fff' });
+    game.add.text(game.world.width - 100, 10, 'Lives: ', { font: '10px Press Start 2P', fill: '#fff' });
+
+    // Katpadi
+    game.add.text(game.world.width - 100, game.world.height - 10, '@katpadi', { font: '10px Press Start 2P', fill: '#fff' });
 
     //  Text
     stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '25px Press Start 2P', fill: '#FFCC33', align: "center" });
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
 
-    for (var i = 0; i < 3; i++) 
+    for (var i = 0; i < 3; i++)
     {
-        var ship = lives.create(game.world.width - 100 + (30 * i), 50, 'ship');
+        var ship = lives.create(game.world.width - 100 + (30 * i), 35, 'ship');
         ship.anchor.setTo(0.5, 0.5);
         ship.angle = 45;
         ship.alpha = 0.4;
@@ -137,23 +152,23 @@ function create() {
     //  And some controls to play the game with
     cursors = game.input.keyboard.createCursorKeys();
     fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-    //game.input.onDown.add(flap);
+    creditsButton = game.input.keyboard.addKey(Phaser.Keyboard.C);
 }
 
 function actuallyStartGame() {
     game.input.keyboard.onDownCallback = null;
     introText.visible = false;
-    
+
     // Sound
     bass.loopFull(0.6);
     bass.onLoop;
-    
+
     enemyBullets.createMultiple(30, 'enemyBullet');
     enemyBullets.setAll('anchor.x', 0.5);
     enemyBullets.setAll('anchor.y', 1);
     enemyBullets.setAll('outOfBoundsKill', true);
     enemyBullets.setAll('checkWorldBounds', true);
-    
+
     bullets.createMultiple(30, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
@@ -236,15 +251,6 @@ function update() {
 
 }
 
-function render() {
-
-    // for (var i = 0; i < hearts.length; i++)
-    // {
-    //     game.debug.body(hearts.children[i]);
-    // }
-
-}
-
 function collisionHandler (bullet, alien) {
 
     //  When a bullet hits an alien we kill them both
@@ -267,9 +273,9 @@ function collisionHandler (bullet, alien) {
         scoreText.text = scoreString + score;
 
         enemyBullets.forEach(function (c) { c.kill(); });
-        
-        level++; 
-        
+
+        level++;
+
         stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
@@ -282,7 +288,7 @@ function collisionHandler (bullet, alien) {
 }
 
 function enemyHitsPlayer (player,bullet) {
-    
+
     bullet.kill();
 
     live = lives.getFirstAlive();
@@ -297,22 +303,27 @@ function enemyHitsPlayer (player,bullet) {
     explosion.reset(player.body.x, player.body.y);
     explosion.play('kaboom', 30, false, true);
     hit.play();
-    
+
     // When the player dies
     if (lives.countLiving() < 1)
     {
-        player.kill();
-        // enemyBullets.callAll('kill');
-        
-        enemyBullets.forEach(function (c) { c.kill(); });
-
-        stateText.text="YOU SUCK.\nClick to restart.";
-        stateText.visible = true;
-
-        //the "click to restart" handler
-        game.input.onTap.addOnce(restart,this);
+        gameOver();
     }
 
+}
+
+function gameOver() {
+    player.kill();
+    enemyBullets.forEach(function (c) { c.kill(); });
+
+    stateText.text="YOU SUCK.\nClick to restart.";
+    stateText.visible = true;
+
+    //rollCredits();
+
+    //the "click to restart" handler
+    game.input.onTap.addOnce(restart,this);
+    //creditsButton.onDown.addOnce(rollCredits, this);
 }
 
 function enemyFires () {
@@ -331,7 +342,7 @@ function enemyFires () {
 
     if (enemyBullet && livingEnemies.length > 0)
     {
-        
+
         var random=game.rnd.integerInRange(0,livingEnemies.length-1);
 
         // randomly select one of them
@@ -365,17 +376,12 @@ function fireBullet () {
 
 }
 
-function resetBullet (bullet) {
-
-    //  Called if the bullet goes out of the screen
-    bullet.kill();
-
-}
-
 function restart () {
 
     //  A new level starts
-    
+    level = 1;
+    levelText.text = 'Level: ' + level;
+
     //resets the life count
     lives.callAll('revive');
     //  And brings the hearts back from the dead :)
@@ -401,5 +407,38 @@ function nextLevel () {
     //hides the text
     stateText.visible = false;
     levelText.text = 'Level: ' + level;
+
+}
+
+function rollCredits() {
+    text = game.add.text(game.world.centerX-150,game.world.centerY+100, '', { font: "20pt Courier", fill: "#19cb65", stroke: "#119f4e", strokeThickness: 2 });
+    nextLine();
+}
+
+function updateLine() {
+
+    if (line.length < content[index].length)
+    {
+        line = content[index].substr(0, line.length + 1);
+        // text.text = line;
+        text.setText(line);
+    }
+    else
+    {
+        //  Wait 2 seconds then start a new line
+        game.time.events.add(Phaser.Timer.SECOND, nextLine, this);
+    }
+
+}
+
+function nextLine() {
+
+    index++;
+
+    if (index < content.length)
+    {
+        line = '';
+        game.time.events.repeat(80, content[index].length + 1, updateLine, this);
+    }
 
 }
