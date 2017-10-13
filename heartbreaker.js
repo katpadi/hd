@@ -14,6 +14,7 @@ function preload() {
     game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
     game.load.image('bullet', 'assets/fiyah.png');
     game.load.image('enemyBullet', 'assets/heart.png');
+    game.load.image('specialEnemyBullet', 'assets/enemy-bullet.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/player.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
@@ -28,6 +29,7 @@ var player;
 var hearts;
 var bullets;
 var enemyBullets;
+var specialEnemyBullets;
 var bass;
 var hit;
 var shot;
@@ -43,11 +45,14 @@ var scoreText;
 var lives;
 var enemyBullet;
 var firingTimer = 0;
+var specialFiringTimer = 0;
 var stateText;
 var livingEnemies = [];
 var level = 1;
 var levelText;
 var introText;
+var bouncyCount = 0;
+var specialTimer = 0;
 
 // Credits
 var text;
@@ -99,6 +104,11 @@ function create() {
     enemyBullets.enableBody = true;
     enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
 
+    // The bouncing enemy bullets
+    specialEnemyBullets = game.add.group();
+    specialEnemyBullets.enableBody = true;
+    specialEnemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+    
     game.input.onTap.addOnce(actuallyStartGame, this);
     game.input.keyboard.onDownCallback = actuallyStartGame;
 
@@ -115,7 +125,7 @@ function create() {
     hearts.enableBody = true;
     hearts.physicsBodyType = Phaser.Physics.ARCADE;
 
-    createAliens();
+    createHearts();
 
     //  The score
     scoreString = 'Hearts Destroyed: ';
@@ -168,7 +178,14 @@ function actuallyStartGame() {
     enemyBullets.setAll('anchor.y', 1);
     enemyBullets.setAll('outOfBoundsKill', true);
     enemyBullets.setAll('checkWorldBounds', true);
-
+    
+    specialEnemyBullets.createMultiple(1, 'specialEnemyBullet');
+    specialEnemyBullets.setAll('anchor.x', 1);
+    specialEnemyBullets.setAll('anchor.y', 1);
+    specialEnemyBullets.setAll('outOfBoundsKill', false);
+    specialEnemyBullets.setAll('checkWorldBounds', false);
+    
+    
     bullets.createMultiple(30, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
@@ -176,7 +193,7 @@ function actuallyStartGame() {
     bullets.setAll('checkWorldBounds', true);
 }
 
-function createAliens () {
+function createHearts () {
 
     for (var y = 0; y < 4; y++)
     {
@@ -218,7 +235,11 @@ function descend() {
 function update() {
     //  Scroll the background
     starfield.tilePosition.y += 2;
-
+    var cursorVelocity = 200;
+    // Slightly increase velocity of cursor
+    if(level % 5 == 0) {
+        cursorVelocity =+ 100;
+    }
     if (player.alive)
     {
         //  Reset the player, then check for movement keys
@@ -226,11 +247,11 @@ function update() {
 
         if (cursors.left.isDown)
         {
-            player.body.velocity.x = -200;
+            player.body.velocity.x = cursorVelocity - (cursorVelocity * 2);
         }
         else if (cursors.right.isDown)
         {
-            player.body.velocity.x = 200;
+            player.body.velocity.x = cursorVelocity;
         }
 
         //  Firing?
@@ -239,6 +260,14 @@ function update() {
             fireBullet();
         }
 
+        if (level > bouncyCount )
+        {
+            if (game.time.now > specialTimer) {
+                specialFiyah();
+            }
+            
+        }
+        
         if (game.time.now > firingTimer)
         {
             enemyFires();
@@ -247,6 +276,7 @@ function update() {
         //  Run collision
         game.physics.arcade.overlap(bullets, hearts, collisionHandler, null, this);
         game.physics.arcade.overlap(enemyBullets, player, enemyHitsPlayer, null, this);
+        game.physics.arcade.overlap(specialEnemyBullets, player, specialBulletHitsPlayer, null, this);
     }
 
 }
@@ -272,17 +302,43 @@ function collisionHandler (bullet, alien) {
         score += 1000;
         scoreText.text = scoreString + score;
 
-        enemyBullets.forEach(function (c) { c.kill(); });
-
         level++;
 
         stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
+        enemyBullets.forEach(function (c) { c.kill(); });
+        specialEnemyBullets.forEach(function (c) { c.kill(); });
+        bouncyCount = level + 1;
+
         //the "click to restart" handler
         var nextLevelBtn = game.input.keyboard.addKey(Phaser.Keyboard.UP);
         nextLevelBtn.onDown.addOnce(nextLevel, this);
         game.input.onTap.addOnce(nextLevel,this);
+    }
+
+}
+
+function specialBulletHitsPlayer (player, bullet) {
+    bullet.kill();
+
+    live = lives.getFirstAlive();
+
+    if (live)
+    {
+        live.kill();
+    }
+
+    //  And create an explosion :)
+    var explosion = explosions.getFirstExists(false);
+    explosion.reset(player.body.x, player.body.y);
+    explosion.play('kaboom', 30, false, true);
+    hit.play();
+
+    // When the player dies
+    if (lives.countLiving() < 1)
+    {
+        gameOver();
     }
 
 }
@@ -315,6 +371,7 @@ function enemyHitsPlayer (player,bullet) {
 function gameOver() {
     player.kill();
     enemyBullets.forEach(function (c) { c.kill(); });
+    specialEnemyBullets.forEach(function (c) { c.kill(); });
 
     stateText.text="YOU SUCK.\nClick to restart.";
     stateText.visible = true;
@@ -324,7 +381,30 @@ function gameOver() {
     //the "click to restart" handler
     game.input.onTap.addOnce(restart,this);
     //creditsButton.onDown.addOnce(rollCredits, this);
+    bouncyCount = 0;
 }
+
+function specialFiyah() {
+    specialEnemyBullet = specialEnemyBullets.getFirstExists(false);
+    if (specialEnemyBullet)
+    {   
+        specialEnemyBullet.body.velocity.setTo(200, 200);
+
+        //  This makes the game world bounce-able
+        specialEnemyBullet.body.collideWorldBounds = true;
+
+        //  This sets the image bounce energy for the horizontal 
+        //  and vertical vectors (as an x,y point). "1" is 100% energy return
+        specialEnemyBullet.body.bounce.setTo(1, 1);
+        
+        specialEnemyBullet.reset(game.rnd.integerInRange(50, game.width-50), 50);
+        //specialEnemyBullet.lifespan = 10000 * level;
+        bouncyCount ++;
+        specialTimer = game.time.now + 5000;
+        game.physics.arcade.moveToObject(specialEnemyBullet, player, 200);
+    }
+}
+
 
 function enemyFires () {
 
@@ -334,15 +414,12 @@ function enemyFires () {
     livingEnemies.length=0;
 
     hearts.forEachAlive(function(alien){
-
         // put every living enemy in an array
         livingEnemies.push(alien);
     });
 
-
     if (enemyBullet && livingEnemies.length > 0)
-    {
-
+    {   
         var random=game.rnd.integerInRange(0,livingEnemies.length-1);
 
         // randomly select one of them
@@ -377,38 +454,35 @@ function fireBullet () {
 }
 
 function restart () {
-
-    //  A new level starts
     level = 1;
     levelText.text = 'Level: ' + level;
-
+    bouncyCount = 0;
     //resets the life count
     lives.callAll('revive');
     //  And brings the hearts back from the dead :)
     hearts.removeAll();
-    createAliens();
-
+    createHearts();
     //revives the player
     player.revive();
     //hides the text
     stateText.visible = false;
-
 }
 
 function nextLevel () {
-    // TODO: Make it more difficult every level.
     //  A new level starts
     //  And brings the hearts back from the dead :)
     hearts.removeAll();
-    createAliens();
+    createHearts();
 
     //revives the player
     player.revive();
     //hides the text
     stateText.visible = false;
     levelText.text = 'Level: ' + level;
-
+    bouncyCount = 0;
+    specialTimer = game.time.now + 3000;
 }
+
 
 function rollCredits() {
     text = game.add.text(game.world.centerX-150,game.world.centerY+100, '', { font: "20pt Courier", fill: "#19cb65", stroke: "#119f4e", strokeThickness: 2 });
