@@ -382,6 +382,8 @@ function gameOver() {
     game.input.onTap.addOnce(restart,this);
     //creditsButton.onDown.addOnce(rollCredits, this);
     bouncyCount = 0;
+    score = 0;
+    scoreText.text = scoreString + score;
 }
 
 function specialFiyah() {
