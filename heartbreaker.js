@@ -382,8 +382,6 @@ function gameOver() {
     game.input.onTap.addOnce(restart,this);
     //creditsButton.onDown.addOnce(rollCredits, this);
     bouncyCount = 0;
-    score = 0;
-    scoreText.text = scoreString + score;
 }
 
 function specialFiyah() {
@@ -459,6 +457,10 @@ function restart () {
     level = 1;
     levelText.text = 'Level: ' + level;
     bouncyCount = 0;
+    // Reset score
+    score = 0;
+    scoreText.text = scoreString + score;
+    
     //resets the life count
     lives.callAll('revive');
     //  And brings the hearts back from the dead :)
