@@ -180,7 +180,7 @@ function actuallyStartGame() {
     enemyBullets.setAll('outOfBoundsKill', true);
     enemyBullets.setAll('checkWorldBounds', true);
 
-    specialEnemyBullets.createMultiple(1, 'specialEnemyBullet');
+    specialEnemyBullets.createMultiple(30, 'specialEnemyBullet');
     specialEnemyBullets.setAll('anchor.x', 1);
     specialEnemyBullets.setAll('anchor.y', 1);
     specialEnemyBullets.setAll('outOfBoundsKill', false);
