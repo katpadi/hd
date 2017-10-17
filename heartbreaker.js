@@ -53,6 +53,7 @@ var levelText;
 var introText;
 var bouncyCount = 0;
 var specialTimer = 0;
+var cursorVelocity = 200;
 
 // Credits
 var text;
@@ -108,7 +109,7 @@ function create() {
     specialEnemyBullets = game.add.group();
     specialEnemyBullets.enableBody = true;
     specialEnemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
-    
+
     game.input.onTap.addOnce(actuallyStartGame, this);
     game.input.keyboard.onDownCallback = actuallyStartGame;
 
@@ -178,14 +179,14 @@ function actuallyStartGame() {
     enemyBullets.setAll('anchor.y', 1);
     enemyBullets.setAll('outOfBoundsKill', true);
     enemyBullets.setAll('checkWorldBounds', true);
-    
+
     specialEnemyBullets.createMultiple(1, 'specialEnemyBullet');
     specialEnemyBullets.setAll('anchor.x', 1);
     specialEnemyBullets.setAll('anchor.y', 1);
     specialEnemyBullets.setAll('outOfBoundsKill', false);
     specialEnemyBullets.setAll('checkWorldBounds', false);
-    
-    
+
+
     bullets.createMultiple(30, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
@@ -235,11 +236,7 @@ function descend() {
 function update() {
     //  Scroll the background
     starfield.tilePosition.y += 2;
-    var cursorVelocity = 200;
-    // Slightly increase velocity of cursor
-    if(level % 5 == 0) {
-        cursorVelocity =+ 100;
-    }
+
     if (player.alive)
     {
         //  Reset the player, then check for movement keys
@@ -265,9 +262,9 @@ function update() {
             if (game.time.now > specialTimer) {
                 specialFiyah();
             }
-            
+
         }
-        
+
         if (game.time.now > firingTimer)
         {
             enemyFires();
@@ -387,16 +384,16 @@ function gameOver() {
 function specialFiyah() {
     specialEnemyBullet = specialEnemyBullets.getFirstExists(false);
     if (specialEnemyBullet)
-    {   
+    {
         specialEnemyBullet.body.velocity.setTo(200, 200);
 
         //  This makes the game world bounce-able
         specialEnemyBullet.body.collideWorldBounds = true;
 
-        //  This sets the image bounce energy for the horizontal 
+        //  This sets the image bounce energy for the horizontal
         //  and vertical vectors (as an x,y point). "1" is 100% energy return
         specialEnemyBullet.body.bounce.setTo(1, 1);
-        
+
         specialEnemyBullet.reset(game.rnd.integerInRange(50, game.width-50), 50);
         //specialEnemyBullet.lifespan = 10000 * level;
         bouncyCount ++;
@@ -419,7 +416,7 @@ function enemyFires () {
     });
 
     if (enemyBullet && livingEnemies.length > 0)
-    {   
+    {
         var random=game.rnd.integerInRange(0,livingEnemies.length-1);
 
         // randomly select one of them
@@ -460,7 +457,7 @@ function restart () {
     // Reset score
     score = 0;
     scoreText.text = scoreString + score;
-    
+
     //resets the life count
     lives.callAll('revive');
     //  And brings the hearts back from the dead :)
@@ -485,6 +482,10 @@ function nextLevel () {
     levelText.text = 'Level: ' + level;
     bouncyCount = 0;
     specialTimer = game.time.now + 3000;
+    // Slightly increase velocity of cursor
+    if(level % 5 == 0) {
+        cursorVelocity =+ 100;
+    }
 }
 
 
