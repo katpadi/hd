@@ -484,7 +484,7 @@ function nextLevel () {
     specialTimer = game.time.now + 3000;
     // Slightly increase velocity of cursor
     if(level % 5 == 0) {
-        cursorVelocity =+ 100;
+        cursorVelocity += 100;
     }
 }
 
