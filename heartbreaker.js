@@ -61,6 +61,8 @@ var food;
 var foodCount = 0;
 var foodTimer = 9999;
 var gameStarted = false; 
+var highScore = getHighScore();
+var highScoreText = '';
 
 // Credits
 var text;
@@ -147,7 +149,10 @@ function create() {
     game.add.text(game.world.width - 100, 10, 'Lives: ', { font: '10px Press Start 2P', fill: '#fff' });
 
     // Katpadi
-    game.add.text(game.world.width - 100, game.world.height - 10, '@katpadi', { font: '10px Press Start 2P', fill: '#fff' });
+    game.add.text(game.world.width - 100, game.world.height - 15, '@katpadi', { font: '10px Press Start 2P', fill: '#fff' });
+    
+    // High score
+    highScoreText = game.add.text(10, game.world.height - 15, 'High Score: ' + getHighScore(), { font: '10px Press Start 2P', fill: '#fff' });
 
     //  Text
     stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '25px Press Start 2P', fill: '#FFCC33', align: "center" });
@@ -411,6 +416,15 @@ function playerEatsFood (pigChef, foodie) {
 
 }
 
+function getHighScore() {
+    var hs = localStorage.getItem('highScore');
+    if(hs === null){
+        return 0;
+    }
+    else {
+        return hs;
+    }
+}
 
 function gameOver() {
     player.kill();
@@ -420,8 +434,11 @@ function gameOver() {
     stateText.text="YOU SUCK.\n\nClick to restart.";
     stateText.visible = true;
 
-    //rollCredits();
+    if(score > getHighScore()){
+        localStorage.setItem('highScore', score);
 
+    }
+    highScoreText.text = 'High Score: ' + getHighScore();
     //the "click to restart" handler
     game.input.onTap.addOnce(restart,this);
     //creditsButton.onDown.addOnce(rollCredits, this);
