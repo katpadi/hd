@@ -13,8 +13,10 @@ function preload() {
     //  Load the Google WebFont Loader script
     game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
     game.load.image('bullet', 'assets/fiyah.png');
-    game.load.image('enemyBullet', 'assets/heart.png');
-    game.load.image('specialEnemyBullet', 'assets/enemy-bullet.png');
+    game.load.image('yosi', 'assets/cigarette.png');
+    game.load.image('blueBullet', 'assets/bullet.png');
+    game.load.image('heartBullet', 'assets/heart.png');
+    game.load.image('boucingBullet', 'assets/enemy-bullet.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/pig_chef.png');
     game.load.spritesheet('food', 'assets/foods.png', 16, 16);
@@ -30,8 +32,8 @@ function preload() {
 var player;
 var hearts;
 var bullets;
-var enemyBullets;
-var specialEnemyBullets;
+var heartBullets;
+var boucingBullets;
 var bass;
 var hit;
 var shot;
@@ -46,7 +48,7 @@ var score = 0;
 var scoreString = '';
 var scoreText;
 var lives;
-var enemyBullet;
+var heartBullet;
 var firingTimer = 0;
 var specialFiringTimer = 0;
 var stateText;
@@ -64,7 +66,10 @@ var foodEatenText;
 var gameStarted = false; 
 var highScore = getHighScore();
 var highScoreText = '';
-
+var normalBulletFlag = true;
+var yosi;
+var yosiTimer = 9999;
+var yosiCount = 0;
 
 function create() {
     //scaling options
@@ -93,20 +98,25 @@ function create() {
     hit = game.add.audio('hit');
     powerup = game.add.audio('powerup');
 
-    //  Our bullet group
+    //  heartbreaker's bullet group
     bullets = game.add.group();
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
+    // heartbreaker's blue bullets
+    blueBullets = game.add.group();
+    blueBullets.enableBody = true;
+    blueBullets.physicsBodyType = Phaser.Physics.ARCADE;
+
     // The enemy's bullets
-    enemyBullets = game.add.group();
-    enemyBullets.enableBody = true;
-    enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+    heartBullets = game.add.group();
+    heartBullets.enableBody = true;
+    heartBullets.physicsBodyType = Phaser.Physics.ARCADE;
 
     // The bouncing enemy bullets
-    specialEnemyBullets = game.add.group();
-    specialEnemyBullets.enableBody = true;
-    specialEnemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+    boucingBullets = game.add.group();
+    boucingBullets.enableBody = true;
+    boucingBullets.physicsBodyType = Phaser.Physics.ARCADE;
 
     game.input.onTap.addOnce(actuallyStartGame, this);
     game.input.keyboard.onDownCallback = actuallyStartGame;
@@ -179,24 +189,29 @@ function actuallyStartGame() {
     bass.loopFull(0.6);
     bass.onLoop;
 
-    enemyBullets.createMultiple(30, 'enemyBullet');
-    enemyBullets.setAll('anchor.x', 0.5);
-    enemyBullets.setAll('anchor.y', 1);
-    enemyBullets.setAll('outOfBoundsKill', true);
-    enemyBullets.setAll('checkWorldBounds', true);
+    heartBullets.createMultiple(30, 'heartBullet');
+    heartBullets.setAll('anchor.x', 0.5);
+    heartBullets.setAll('anchor.y', 1);
+    heartBullets.setAll('outOfBoundsKill', true);
+    heartBullets.setAll('checkWorldBounds', true);
 
-    specialEnemyBullets.createMultiple(30, 'specialEnemyBullet');
-    specialEnemyBullets.setAll('anchor.x', 1);
-    specialEnemyBullets.setAll('anchor.y', 1);
-    specialEnemyBullets.setAll('outOfBoundsKill', false);
-    specialEnemyBullets.setAll('checkWorldBounds', false);
-
+    boucingBullets.createMultiple(30, 'boucingBullet');
+    boucingBullets.setAll('anchor.x', 1);
+    boucingBullets.setAll('anchor.y', 1);
+    boucingBullets.setAll('outOfBoundsKill', false);
+    boucingBullets.setAll('checkWorldBounds', false);
 
     bullets.createMultiple(30, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
+    
+    blueBullets.createMultiple(30, 'blueBullet');
+    blueBullets.setAll('anchor.x', 0.5);
+    blueBullets.setAll('anchor.y', 1);
+    blueBullets.setAll('outOfBoundsKill', true);
+    blueBullets.setAll('checkWorldBounds', true);
     
     foodTimer = game.time.now + pickRandomDelay();
     specialTimer = game.time.now + pickRandomDelay() + pickRandomDelay();
@@ -272,6 +287,12 @@ function update() {
                 foodPopper();
             }
         }
+
+//        if(level > yosiCount) {
+//            if (game.time.now > yosiTimer) {
+//                yosiPopper();
+//            }
+//        }
         
         if (level > bouncyCount )
         {
@@ -288,8 +309,8 @@ function update() {
 
         //  Run collision
         game.physics.arcade.overlap(bullets, hearts, collisionHandler, null, this);
-        game.physics.arcade.overlap(enemyBullets, player, enemyHitsPlayer, null, this);
-        game.physics.arcade.overlap(specialEnemyBullets, player, specialBulletHitsPlayer, null, this);
+        game.physics.arcade.overlap(heartBullets, player, enemyHitsPlayer, null, this);
+        game.physics.arcade.overlap(boucingBullets, player, specialBulletHitsPlayer, null, this);
         game.physics.arcade.overlap(player, food, playerEatsFood, null, this);
     }
 
@@ -320,8 +341,8 @@ function collisionHandler (bullet, alien) {
         stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
-        enemyBullets.forEach(function (c) { c.kill(); });
-        specialEnemyBullets.forEach(function (c) { c.kill(); });
+        heartBullets.forEach(function (c) { c.kill(); });
+        boucingBullets.forEach(function (c) { c.kill(); });
         
         //the "click to restart" handler
         var nextLevelBtn = game.input.keyboard.addKey(Phaser.Keyboard.UP);
@@ -383,7 +404,7 @@ function enemyHitsPlayer (player,bullet) {
 function playerEatsFood (pigChef, foodie) {
     foodie.kill();
     
-    var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#fff' });
+    var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#ff0' });
     var tween = game.add.tween(txt).to( { y: player.body.y - 50, x: player.body.x + 20, alpha: 1 }, 2000, Phaser.Easing.Linear.Out, true);
     tween.onComplete.add(function() { 
         txt.visible = false; 
@@ -394,9 +415,22 @@ function playerEatsFood (pigChef, foodie) {
 
 }
 
+function yosiPopper() {
+    yosiCount++;
+    yosi = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'yosi');
+    game.physics.enable(yosi, Phaser.Physics.ARCADE);
+    
+    var tween = game.add.tween(yosi.body).to( { y: player.body.y }, 1000, Phaser.Easing.Exponential.None, true);
+    tween.onComplete.add(function() { 
+        game.time.events.add(Phaser.Timer.SECOND * 3, fadeYosi, this);
+    }, this);
+    
+    yosiTimer = game.time.now + pickRandomDelay();
+}
+
 function foodPopper() {
     foodCount++;
-    food = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'food');
+    food = game.add.sprite(game.rnd.integerInRange(50, game.width-20), 50, 'food');
     game.physics.enable(food, Phaser.Physics.ARCADE);
     
     var swim = food.animations.add('swim');
@@ -422,8 +456,8 @@ function getHighScore() {
 
 function gameOver() {
     player.kill();
-    enemyBullets.forEach(function (c) { c.kill(); });
-    specialEnemyBullets.forEach(function (c) { c.kill(); });
+    heartBullets.forEach(function (c) { c.kill(); });
+    boucingBullets.forEach(function (c) { c.kill(); });
 
     stateText.text="YOU SUCK.\n\nClick to restart.";
     stateText.visible = true;
@@ -435,30 +469,29 @@ function gameOver() {
     highScoreText.text = 'High Score: ' + getHighScore();
     //the "click to restart" handler
     game.input.onTap.addOnce(restart,this);
-    //creditsButton.onDown.addOnce(rollCredits, this);
     bouncyCount = 0;
 }
 
 function specialFiyah() {
-    specialEnemyBullet = specialEnemyBullets.getFirstExists(false);
-    if (specialEnemyBullet)
+    boucingBullet = boucingBullets.getFirstExists(false);
+    if (boucingBullet)
     {
-        specialEnemyBullet.body.velocity.setTo(200, 200);
+        boucingBullet.body.velocity.setTo(200, 200);
 
         //  This makes the game world bounce-able
-        specialEnemyBullet.body.collideWorldBounds = true;
+        boucingBullet.body.collideWorldBounds = true;
 
         //  This sets the image bounce energy for the horizontal
         //  and vertical vectors (as an x,y point). "1" is 100% energy return
-        specialEnemyBullet.body.bounce.setTo(1, 1);
+        boucingBullet.body.bounce.setTo(1, 1);
 
-        specialEnemyBullet.reset(game.rnd.integerInRange(50, game.width-50), 50);
-        //specialEnemyBullet.lifespan = 10000 * level;
+        boucingBullet.reset(game.rnd.integerInRange(50, game.width-50), 50);
+        //boucingBullet.lifespan = 10000 * level;
         bouncyCount ++;
         specialTimer = game.time.now + pickRandomDelay();
         
                              
-        game.physics.arcade.moveToObject(specialEnemyBullet, player, 200);
+        game.physics.arcade.moveToObject(boucingBullet, player, 200);
     }
 }
 
@@ -469,7 +502,7 @@ function pickRandomDelay() {
 function enemyFires () {
 
     //  Grab the first bullet we can from the pool
-    enemyBullet = enemyBullets.getFirstExists(false);
+    heartBullet = heartBullets.getFirstExists(false);
 
     livingEnemies.length=0;
 
@@ -478,16 +511,16 @@ function enemyFires () {
         livingEnemies.push(alien);
     });
 
-    if (enemyBullet && livingEnemies.length > 0)
+    if (heartBullet && livingEnemies.length > 0)
     {
         var random=game.rnd.integerInRange(0,livingEnemies.length-1);
 
         // randomly select one of them
         var shooter=livingEnemies[random];
         // And fire the bullet from this enemy
-        enemyBullet.reset(shooter.body.x, shooter.body.y + 10);
+        heartBullet.reset(shooter.body.x, shooter.body.y + 10);
 
-        game.physics.arcade.moveToObject(enemyBullet,player, (level * 100) );
+        game.physics.arcade.moveToObject(heartBullet,player, (level * 100) );
         firingTimer = game.time.now + 2000;
     }
 
@@ -499,12 +532,17 @@ function fireBullet () {
     if (game.time.now > bulletTime)
     {
         //  Grab the first bullet we can from the pool
-        bullet = bullets.getFirstExists(false);
-
+        if(normalBulletFlag) {
+            bullet = bullets.getFirstExists(false);
+            bullet.angle = -90;
+        }
+        else {
+            bullet = blueBullets.getFirstExists(false);
+        }
+        
         if (bullet)
         {
             //  And fire it
-            bullet.angle = -90;
             bullet.reset(player.x, player.y + 8);
             bullet.body.velocity.y = -400;
             bulletTime = game.time.now + 300;
@@ -561,5 +599,10 @@ function nextLevel () {
 
 function fadeFood() {
     var tween = game.add.tween(food).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { food.kill(); }, this);
+    tween.onComplete.add(function() { food.kill(); }, food);
+}
+
+function fadeYosi() {
+    var tween = game.add.tween(yosi).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function() { yosi.kill(); }, yosi);
 }
