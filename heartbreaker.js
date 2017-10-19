@@ -60,22 +60,10 @@ var cursorVelocity = 200;
 var food;
 var foodCount = 0;
 var foodTimer = 9999;
+var foodEatenText;
 var gameStarted = false; 
 var highScore = getHighScore();
 var highScoreText = '';
-
-// Credits
-var text;
-var index = 0;
-var line = '';
-var content = [
-    " ",
-    "Thanks for playing.",
-    " ",
-    "This game is called...",
-    " ",
-    "The Heart Breaker",
-];
 
 
 function create() {
@@ -307,22 +295,6 @@ function update() {
 
 }
 
-function foodPopper() {
-    foodCount++;
-    food = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'food');
-    game.physics.enable(food, Phaser.Physics.ARCADE);
-    
-    var swim = food.animations.add('swim');
-    food.animations.play('swim', 5, true, true);
-    var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { 
-        food.animations.stop('swim'); 
-        game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
-    }, this);
-    
-    foodTimer = game.time.now + pickRandomDelay();
-}
-
 function collisionHandler (bullet, alien) {
 
     //  When a bullet hits an alien we kill them both
@@ -409,11 +381,33 @@ function enemyHitsPlayer (player,bullet) {
 }
 
 function playerEatsFood (pigChef, foodie) {
-
     foodie.kill();
+    
+    var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#fff' });
+    var tween = game.add.tween(txt).to( { y: player.body.y - 50, x: player.body.x + 20, alpha: 1 }, 2000, Phaser.Easing.Linear.Out, true);
+    tween.onComplete.add(function() { 
+        txt.visible = false; 
+    }, this);    
+    
     powerup.play();
     score += 50;
 
+}
+
+function foodPopper() {
+    foodCount++;
+    food = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'food');
+    game.physics.enable(food, Phaser.Physics.ARCADE);
+    
+    var swim = food.animations.add('swim');
+    food.animations.play('swim', 5, true, true);
+    var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function() { 
+        food.animations.stop('swim'); 
+        game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
+    }, this);
+    
+    foodTimer = game.time.now + pickRandomDelay();
 }
 
 function getHighScore() {
@@ -568,37 +562,4 @@ function nextLevel () {
 function fadeFood() {
     var tween = game.add.tween(food).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
     tween.onComplete.add(function() { food.kill(); }, this);
-}
-
-function rollCredits() {
-    text = game.add.text(game.world.centerX-150,game.world.centerY+100, '', { font: "20pt Courier", fill: "#19cb65", stroke: "#119f4e", strokeThickness: 2 });
-    nextLine();
-}
-
-function updateLine() {
-
-    if (line.length < content[index].length)
-    {
-        line = content[index].substr(0, line.length + 1);
-        // text.text = line;
-        text.setText(line);
-    }
-    else
-    {
-        //  Wait 2 seconds then start a new line
-        game.time.events.add(Phaser.Timer.SECOND, nextLine, this);
-    }
-
-}
-
-function nextLine() {
-
-    index++;
-
-    if (index < content.length)
-    {
-        line = '';
-        game.time.events.repeat(80, content[index].length + 1, updateLine, this);
-    }
-
 }
