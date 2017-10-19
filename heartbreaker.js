@@ -19,6 +19,7 @@ function preload() {
     game.load.image('boucingBullet', 'assets/enemy-bullet.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/pig_chef.png');
+    game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
     game.load.spritesheet('food', 'assets/foods.png', 16, 16);
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
     game.load.image('starfield', 'assets/starfield.png');
@@ -71,6 +72,23 @@ var yosi;
 var yosiTimer = 9999;
 var yosiCount = 0;
 
+
+// Settings
+var explosionPoolCount = 30;
+var enemyBulletsPoolCount = 30;
+var specialEnemyBulletsPoolCount = 30;
+var bulletsPoolCount = 30;
+
+var baseCursorVelocity = 200;
+var velocityIncrease = 100;
+var speedUpEveryXLevel = 2;
+
+var cursorConfig = {
+    base: 200,
+    increase: 100,
+    increaseEveryXLevel: 3    
+}
+
 function create() {
     //scaling options
     this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
@@ -122,7 +140,10 @@ function create() {
     game.input.keyboard.onDownCallback = actuallyStartGame;
 
     //  The destroyer!
-    player = game.add.sprite(400, 500, 'ship');
+    player = game.add.sprite(400, 500, 'piggy')
+    player.anchor.setTo(0.5, 0.5);
+    player.animations.add('fly', [ 0, 1], 3, true);
+    player.play('fly');
     
     game.physics.enable(player, Phaser.Physics.ARCADE);
     // Do not allow passing through world bounds
@@ -162,8 +183,8 @@ function create() {
     
     for (var i = 0; i < 3; i++)
     {
-        var pig_chef_life = lives.create(game.world.width - 100 + (30 * i), 35, 'ship');
-        pig_chef_life.scale.setTo(0.5,0.5);
+        var pig_chef_life = lives.create(game.world.width - 100 + 6 + (20 * i), 35, 'piggy');
+        pig_chef_life.scale.setTo(0.75, 0.75);
         pig_chef_life.anchor.setTo(0.5, 0.5);
         pig_chef_life.alpha = 0.7;
     }
@@ -201,7 +222,7 @@ function actuallyStartGame() {
     boucingBullets.setAll('outOfBoundsKill', false);
     boucingBullets.setAll('checkWorldBounds', false);
 
-    bullets.createMultiple(30, 'bullet');
+    bullets.createMultiple(bulletsPoolCount, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
     bullets.setAll('outOfBoundsKill', true);
@@ -227,7 +248,7 @@ function createHearts () {
         {
             var alien = hearts.create(x * 48, y * 50, 'invader');
             alien.anchor.setTo(0.5, 0.5);
-            alien.animations.add('fly', [ 0,1, 2, 1], 2, true);
+            alien.animations.add('fly', [ 0, 1, 2, 1], 2, true);
             alien.play('fly');
             alien.body.moves = false;
         }
@@ -269,7 +290,7 @@ function update() {
 
         if (cursors.left.isDown)
         {
-            player.body.velocity.x = cursorVelocity - (cursorVelocity * 2);
+            player.body.velocity.x = -cursorVelocity;
         }
         else if (cursors.right.isDown)
         {
@@ -592,9 +613,7 @@ function nextLevel () {
     foodTimer = game.time.now + pickRandomDelay();
     
     // Slightly increase velocity of cursor
-    if(level % 5 == 0) {
-        cursorVelocity += 100;
-    }
+    cursorVelocity = cursorConfig.base + (Math.floor(level/cursorConfig.increaseEveryXLevel) * cursorConfig.increase); 
 }
 
 function fadeFood() {
