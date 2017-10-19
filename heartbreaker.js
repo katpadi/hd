@@ -23,6 +23,7 @@ function preload() {
     game.load.audio('bass', 'assets/bass.mp3');
     game.load.audio('shot', 'assets/laser.wav');
     game.load.audio('hit', 'assets/hit.wav');
+    game.load.audio('powerup', 'assets/powerup.wav');
 
 }
 
@@ -34,6 +35,7 @@ var specialEnemyBullets;
 var bass;
 var hit;
 var shot;
+var powerup;
 var bulletTime = 0;
 var cursors;
 var fireButton;
@@ -58,6 +60,7 @@ var cursorVelocity = 200;
 var food;
 var foodCount = 0;
 var foodTimer = 9999;
+var gameStarted = false; 
 
 // Credits
 var text;
@@ -98,6 +101,7 @@ function create() {
     bass = game.add.audio('bass');
     shot = game.add.audio('shot');
     hit = game.add.audio('hit');
+    powerup = game.add.audio('powerup');
 
     //  Our bullet group
     bullets = game.add.group();
@@ -202,7 +206,9 @@ function actuallyStartGame() {
     bullets.setAll('checkWorldBounds', true);
     
     foodTimer = game.time.now + pickRandomDelay();
-    specialTimer = game.time.now + pickRandomDelay();
+    specialTimer = game.time.now + pickRandomDelay() + pickRandomDelay();
+    
+    gameStarted = true;
 }
 
 function createHearts () {
@@ -248,7 +254,7 @@ function update() {
     //  Scroll the background
     starfield.tilePosition.y += 2;
 
-    if (player.alive)
+    if (player.alive && gameStarted)
     {
         //  Reset the player, then check for movement keys
         player.body.velocity.setTo(0, 0);
@@ -291,6 +297,7 @@ function update() {
         game.physics.arcade.overlap(bullets, hearts, collisionHandler, null, this);
         game.physics.arcade.overlap(enemyBullets, player, enemyHitsPlayer, null, this);
         game.physics.arcade.overlap(specialEnemyBullets, player, specialBulletHitsPlayer, null, this);
+        game.physics.arcade.overlap(player, food, playerEatsFood, null, this);
     }
 
 }
@@ -303,8 +310,11 @@ function foodPopper() {
     var swim = food.animations.add('swim');
     food.animations.play('swim', 5, true, true);
     var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { food.animations.stop('swim'); }, this);
-    game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
+    tween.onComplete.add(function() { 
+        food.animations.stop('swim'); 
+        game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
+    }, this);
+    
     foodTimer = game.time.now + pickRandomDelay();
 }
 
@@ -315,7 +325,7 @@ function collisionHandler (bullet, alien) {
     alien.kill();
 
     //  Increase the score
-    score += 20;
+    score += 10;
     shot.play();
     scoreText.text = scoreString + score;
 
@@ -392,6 +402,15 @@ function enemyHitsPlayer (player,bullet) {
     }
 
 }
+
+function playerEatsFood (pigChef, foodie) {
+
+    foodie.kill();
+    powerup.play();
+    score += 50;
+
+}
+
 
 function gameOver() {
     player.kill();
