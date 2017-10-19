@@ -16,7 +16,8 @@ function preload() {
     game.load.image('enemyBullet', 'assets/heart.png');
     game.load.image('specialEnemyBullet', 'assets/enemy-bullet.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
-    game.load.image('ship', 'assets/player.png');
+    game.load.image('ship', 'assets/pig_chef.png');
+    game.load.spritesheet('food', 'assets/foods.png', 16, 16);
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
     game.load.image('starfield', 'assets/starfield.png');
     game.load.audio('bass', 'assets/bass.mp3');
@@ -52,8 +53,11 @@ var level = 1;
 var levelText;
 var introText;
 var bouncyCount = 0;
-var specialTimer = 0;
+var specialTimer = 9999;
 var cursorVelocity = 200;
+var food;
+var foodCount = 0;
+var foodTimer = 9999;
 
 // Credits
 var text;
@@ -115,8 +119,7 @@ function create() {
 
     //  The destroyer!
     player = game.add.sprite(400, 500, 'ship');
-    player.anchor.setTo(0.5, 0.5);
-
+    
     game.physics.enable(player, Phaser.Physics.ARCADE);
     // Do not allow passing through world bounds
     player.body.collideWorldBounds = true;
@@ -127,7 +130,7 @@ function create() {
     hearts.physicsBodyType = Phaser.Physics.ARCADE;
 
     createHearts();
-
+    
     //  The score
     scoreString = 'Hearts Destroyed: ';
     scoreText = game.add.text(10, 10, scoreString + score, { font: '10px Press Start 2P', fill: '#fff' });
@@ -146,13 +149,16 @@ function create() {
     stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '25px Press Start 2P', fill: '#FFCC33', align: "center" });
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
+    
+    //playerDisplay = game.add.sprite(game.world.centerX,game.world.centerY, 'ship');
 
+    
     for (var i = 0; i < 3; i++)
     {
-        var ship = lives.create(game.world.width - 100 + (30 * i), 35, 'ship');
-        ship.anchor.setTo(0.5, 0.5);
-        ship.angle = 45;
-        ship.alpha = 0.4;
+        var pig_chef_life = lives.create(game.world.width - 100 + (30 * i), 35, 'ship');
+        pig_chef_life.scale.setTo(0.5,0.5);
+        pig_chef_life.anchor.setTo(0.5, 0.5);
+        pig_chef_life.alpha = 0.7;
     }
 
     //  An explosion pool
@@ -170,6 +176,8 @@ function actuallyStartGame() {
     game.input.keyboard.onDownCallback = null;
     introText.visible = false;
 
+    player.anchor.setTo(0.5, 0.5);
+    
     // Sound
     bass.loopFull(0.6);
     bass.onLoop;
@@ -192,6 +200,9 @@ function actuallyStartGame() {
     bullets.setAll('anchor.y', 1);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
+    
+    foodTimer = game.time.now + pickRandomDelay();
+    specialTimer = game.time.now + pickRandomDelay();
 }
 
 function createHearts () {
@@ -257,6 +268,12 @@ function update() {
             fireBullet();
         }
 
+        if(level > foodCount) {
+            if (game.time.now > foodTimer) {
+                foodPopper();
+            }
+        }
+        
         if (level > bouncyCount )
         {
             if (game.time.now > specialTimer) {
@@ -278,6 +295,19 @@ function update() {
 
 }
 
+function foodPopper() {
+    foodCount++;
+    food = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'food');
+    game.physics.enable(food, Phaser.Physics.ARCADE);
+    
+    var swim = food.animations.add('swim');
+    food.animations.play('swim', 5, true, true);
+    var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function() { food.animations.stop('swim'); }, this);
+    game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
+    foodTimer = game.time.now + pickRandomDelay();
+}
+
 function collisionHandler (bullet, alien) {
 
     //  When a bullet hits an alien we kill them both
@@ -294,20 +324,18 @@ function collisionHandler (bullet, alien) {
     explosion.reset(alien.body.x, alien.body.y);
     explosion.play('kaboom', 30, false, true);
 
+    // Means you won the level
     if (hearts.countLiving() == 0)
     {
         score += 1000;
         scoreText.text = scoreString + score;
-
-        level++;
 
         stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
         enemyBullets.forEach(function (c) { c.kill(); });
         specialEnemyBullets.forEach(function (c) { c.kill(); });
-        bouncyCount = level + 1;
-
+        
         //the "click to restart" handler
         var nextLevelBtn = game.input.keyboard.addKey(Phaser.Keyboard.UP);
         nextLevelBtn.onDown.addOnce(nextLevel, this);
@@ -370,7 +398,7 @@ function gameOver() {
     enemyBullets.forEach(function (c) { c.kill(); });
     specialEnemyBullets.forEach(function (c) { c.kill(); });
 
-    stateText.text="YOU SUCK.\nClick to restart.";
+    stateText.text="YOU SUCK.\n\nClick to restart.";
     stateText.visible = true;
 
     //rollCredits();
@@ -397,11 +425,16 @@ function specialFiyah() {
         specialEnemyBullet.reset(game.rnd.integerInRange(50, game.width-50), 50);
         //specialEnemyBullet.lifespan = 10000 * level;
         bouncyCount ++;
-        specialTimer = game.time.now + 5000;
+        specialTimer = game.time.now + pickRandomDelay();
+        
+                             
         game.physics.arcade.moveToObject(specialEnemyBullet, player, 200);
     }
 }
 
+function pickRandomDelay() {
+    return Phaser.Timer.SECOND * game.rnd.integerInRange(2, 10);
+}
 
 function enemyFires () {
 
@@ -469,25 +502,37 @@ function restart () {
     stateText.visible = false;
 }
 
+//  A new level starts
 function nextLevel () {
-    //  A new level starts
     //  And brings the hearts back from the dead :)
     hearts.removeAll();
     createHearts();
 
     //revives the player
     player.revive();
-    //hides the text
-    stateText.visible = false;
-    levelText.text = 'Level: ' + level;
     bouncyCount = 0;
-    specialTimer = game.time.now + 3000;
+    foodCount = 0;
+    level++;
+    
+    // Hide congratulatory text
+    stateText.visible = false;
+    
+    // Update level on upper left
+    levelText.text = 'Level: ' + level;
+
+    specialTimer = game.time.now + pickRandomDelay();
+    foodTimer = game.time.now + pickRandomDelay();
+    
     // Slightly increase velocity of cursor
     if(level % 5 == 0) {
         cursorVelocity += 100;
     }
 }
 
+function fadeFood() {
+    var tween = game.add.tween(food).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function() { food.kill(); }, this);
+}
 
 function rollCredits() {
     text = game.add.text(game.world.centerX-150,game.world.centerY+100, '', { font: "20pt Courier", fill: "#19cb65", stroke: "#119f4e", strokeThickness: 2 });
