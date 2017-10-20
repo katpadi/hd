@@ -20,8 +20,9 @@ function preload() {
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/pig_chef.png');
     game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
-    game.load.spritesheet('food', 'assets/foods.png', 16, 16);
+    game.load.image('food', 'assets/burger.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
+    game.load.spritesheet('explode2', 'assets/explode2.png', 25, 25);
     game.load.image('starfield', 'assets/starfield.png');
     game.load.audio('bass', 'assets/bass.mp3');
     game.load.audio('shot', 'assets/enemy-fire.wav');
@@ -73,7 +74,7 @@ var normalBulletFlag = true;
 var yosi;
 var yosiTimer = 9999;
 var yosiCount = 0;
-
+var explosions2;
 
 // Settings
 var explosionPoolCount = 30;
@@ -197,6 +198,11 @@ function create() {
     explosions.createMultiple(30, 'kaboom');
     explosions.forEach(setupInvader, this);
 
+    explosions2 = game.add.group();
+    explosions2.createMultiple(30, 'explode2');
+    explosions2.forEach(setupPigExplosion, this);
+
+    
     //  And some controls to play the game with
     cursors = game.input.keyboard.createCursorKeys();
     fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
@@ -276,6 +282,14 @@ function setupInvader (invader) {
 
 }
 
+function setupPigExplosion (pig) {
+
+    pig.anchor.x = 1;
+    pig.anchor.y = 1;
+    pig.animations.add('kaboom');
+
+}
+
 function descend() {
 
     hearts.y += 10;
@@ -312,11 +326,11 @@ function update() {
             }
         }
 
-//        if(level > yosiCount) {
-//            if (game.time.now > yosiTimer) {
-//                yosiPopper();
-//            }
-//        }
+        if(level > yosiCount) {
+            if (game.time.now > yosiTimer) {
+                yosiPopper();
+            }
+        }
         
         if (level > bouncyCount )
         {
@@ -412,7 +426,7 @@ function enemyHitsPlayer (player,bullet) {
     }
 
     //  And create an explosion :)
-    var explosion = explosions.getFirstExists(false);
+    var explosion = explosions2.getFirstExists(false);
     explosion.reset(player.body.x, player.body.y);
     explosion.play('kaboom', 30, false, true);
     hit.play();
@@ -425,9 +439,8 @@ function enemyHitsPlayer (player,bullet) {
 
 }
 
-function playerEatsFood (pigChef, foodie) {
-    foodie.kill();
-    
+function playerEatsFood () {
+    food.kill();
     var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#ff0' });
     var tween = game.add.tween(txt).to( { y: player.body.y - 50, x: player.body.x + 20, alpha: 1 }, 2000, Phaser.Easing.Linear.Out, true);
     tween.onComplete.add(function() { 
@@ -445,27 +458,30 @@ function yosiPopper() {
     game.physics.enable(yosi, Phaser.Physics.ARCADE);
     
     var tween = game.add.tween(yosi.body).to( { y: player.body.y }, 1000, Phaser.Easing.Exponential.None, true);
-    tween.onComplete.add(function() { 
-        game.time.events.add(Phaser.Timer.SECOND * 3, fadeYosi, this);
-    }, this);
+    tween.onComplete.add(fadeYosi, this);
     
     yosiTimer = game.time.now + pickRandomDelay();
+}
+function fadeYosi() {
+    var tween = game.add.tween(food).to( { alpha: 0 }, 3000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function () { yosi.kill(); }, this);
 }
 
 function foodPopper() {
     foodCount++;
     food = game.add.sprite(game.rnd.integerInRange(50, game.width-20), 50, 'food');
+    food.scale.setTo(0.75, 0.75);
+    
     game.physics.enable(food, Phaser.Physics.ARCADE);
     
-    var swim = food.animations.add('swim');
-    food.animations.play('swim', 5, true, true);
     var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { 
-        food.animations.stop('swim'); 
-        game.time.events.add(Phaser.Timer.SECOND * 4, fadeFood, this);
-    }, this);
-    
+    tween.onComplete.add(fadeFood, this);
     foodTimer = game.time.now + pickRandomDelay();
+}
+
+function fadeFood() {
+    var tween = game.add.tween(food).to( { alpha: 0 }, 4000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function () { food.kill(); }, this);
 }
 
 function getHighScore() {
@@ -618,14 +634,4 @@ function nextLevel () {
     
     // Slightly increase velocity of cursor
     cursorVelocity = cursorConfig.base + (Math.floor(level/cursorConfig.increaseEveryXLevel) * cursorConfig.increase); 
-}
-
-function fadeFood() {
-    var tween = game.add.tween(food).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { food.kill(); }, food);
-}
-
-function fadeYosi() {
-    var tween = game.add.tween(yosi).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function() { yosi.kill(); }, yosi);
 }
