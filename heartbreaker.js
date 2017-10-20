@@ -24,9 +24,10 @@ function preload() {
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
     game.load.image('starfield', 'assets/starfield.png');
     game.load.audio('bass', 'assets/bass.mp3');
-    game.load.audio('shot', 'assets/laser.wav');
+    game.load.audio('shot', 'assets/enemy-fire.wav');
     game.load.audio('hit', 'assets/hit.wav');
     game.load.audio('powerup', 'assets/powerup.wav');
+    game.load.audio('gg', 'assets/gg.mp3');
 
 }
 
@@ -38,6 +39,7 @@ var boucingBullets;
 var bass;
 var hit;
 var shot;
+var gg;
 var powerup;
 var bulletTime = 0;
 var cursors;
@@ -114,6 +116,7 @@ function create() {
     bass = game.add.audio('bass');
     shot = game.add.audio('shot');
     hit = game.add.audio('hit');
+    gg = game.add.audio('gg');
     powerup = game.add.audio('powerup');
 
     //  heartbreaker's bullet group
@@ -130,7 +133,7 @@ function create() {
     heartBullets = game.add.group();
     heartBullets.enableBody = true;
     heartBullets.physicsBodyType = Phaser.Physics.ARCADE;
-
+    
     // The bouncing enemy bullets
     boucingBullets = game.add.group();
     boucingBullets.enableBody = true;
@@ -477,6 +480,7 @@ function getHighScore() {
 
 function gameOver() {
     player.kill();
+    gg.play();
     heartBullets.forEach(function (c) { c.kill(); });
     boucingBullets.forEach(function (c) { c.kill(); });
 
@@ -524,7 +528,7 @@ function enemyFires () {
 
     //  Grab the first bullet we can from the pool
     heartBullet = heartBullets.getFirstExists(false);
-
+    
     livingEnemies.length=0;
 
     hearts.forEachAlive(function(alien){
