@@ -22,7 +22,7 @@ function preload() {
     game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
     game.load.image('food', 'assets/burger.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
-    game.load.spritesheet('explode2', 'assets/explode2.png', 25, 25);
+    game.load.spritesheet('explode2', 'assets/explode2.png', 32, 25);
     game.load.image('starfield', 'assets/starfield.png');
     game.load.audio('bass', 'assets/bass.mp3');
     game.load.audio('shot', 'assets/enemy-fire.wav');
@@ -284,8 +284,8 @@ function setupInvader (invader) {
 
 function setupPigExplosion (pig) {
 
-    pig.anchor.x = 1;
-    pig.anchor.y = 1;
+    pig.anchor.x = 0.5;
+    pig.anchor.y = 0.5;
     pig.animations.add('kaboom');
 
 }
@@ -427,10 +427,12 @@ function enemyHitsPlayer (player,bullet) {
 
     //  And create an explosion :)
     var explosion = explosions2.getFirstExists(false);
-    explosion.reset(player.body.x, player.body.y);
+    explosion.reset(player.body.x + 10, player.body.y + 10);
     explosion.play('kaboom', 30, false, true);
     hit.play();
-
+    player.alpha = 0;
+    game.time.events.add(200, function(){player.alpha = 1;}, this);
+    
     // When the player dies
     if (lives.countLiving() < 1)
     {
