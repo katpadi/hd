@@ -16,7 +16,7 @@ function preload() {
     game.load.image('yosi', 'assets/cigarette.png');
     game.load.image('blueBullet', 'assets/bullet.png');
     game.load.image('heartBullet', 'assets/heart.png');
-    game.load.image('boucingBullet', 'assets/enemy-bullet.png');
+    game.load.image('boucingBullet', 'assets/broccoli.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/pig_chef.png');
     game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
@@ -184,7 +184,7 @@ function create() {
     
     for (var i = 0; i < 3; i++)
     {
-        var pigLife = lives.create(game.world.width - 100 + 6 + (20 * i), 35, 'piggy');
+        var pigLife = lives.create(game.world.width - 100 + 6 + (20 * i), 35, 'yosi');
         pigLife.scale.setTo(0.75, 0.75);
         pigLife.anchor.setTo(0.5, 0.5);
         pigLife.alpha = 0.8;
@@ -223,10 +223,11 @@ function actuallyStartGame() {
     heartBullets.setAll('checkWorldBounds', true);
 
     boucingBullets.createMultiple(30, 'boucingBullet');
-    boucingBullets.setAll('anchor.x', 1);
-    boucingBullets.setAll('anchor.y', 1);
+    boucingBullets.setAll('anchor.x', 0.5);
+    boucingBullets.setAll('anchor.y', 0.5);
     boucingBullets.setAll('outOfBoundsKill', false);
     boucingBullets.setAll('checkWorldBounds', false);
+    boucingBullets.setAll('angle', 180);
 
     bullets.createMultiple(bulletsPoolCount, 'bullet');
     bullets.setAll('anchor.x', 0.5);
@@ -323,11 +324,12 @@ function update() {
             }
         }
 
-        if(level > yosiCount) {
-            if (game.time.now > yosiTimer) {
-                yosiPopper();
-            }
-        }
+//        TODO:
+//        if(level > yosiCount) {
+//            if (game.time.now > yosiTimer) {
+//                yosiPopper();
+//            }
+//        }
         
         if (level > bouncyCount )
         {
