@@ -182,15 +182,12 @@ function create() {
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
     
-    //playerDisplay = game.add.sprite(game.world.centerX,game.world.centerY, 'ship');
-
-    
     for (var i = 0; i < 3; i++)
     {
-        var pig_chef_life = lives.create(game.world.width - 100 + 6 + (20 * i), 35, 'piggy');
-        pig_chef_life.scale.setTo(0.75, 0.75);
-        pig_chef_life.anchor.setTo(0.5, 0.5);
-        pig_chef_life.alpha = 0.7;
+        var pigLife = lives.create(game.world.width - 100 + 6 + (20 * i), 35, 'piggy');
+        pigLife.scale.setTo(0.75, 0.75);
+        pigLife.anchor.setTo(0.5, 0.5);
+        pigLife.alpha = 0.8;
     }
 
     //  An explosion pool
