@@ -20,7 +20,7 @@ function preload() {
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
     game.load.image('ship', 'assets/pig_chef.png');
     game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
-    game.load.image('food', 'assets/burger.png');
+    game.load.image('burger', 'assets/burger.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
     game.load.spritesheet('explode2', 'assets/explode2.png', 32, 25);
     game.load.image('starfield', 'assets/starfield.png');
@@ -63,7 +63,7 @@ var introText;
 var bouncyCount = 0;
 var specialTimer = 9999;
 var cursorVelocity = 200;
-var food;
+
 var foodCount = 0;
 var foodTimer = 9999;
 var foodEatenText;
@@ -75,7 +75,8 @@ var yosi;
 var yosiTimer = 9999;
 var yosiCount = 0;
 var explosions2;
-
+var stupidBurgers;
+var burger;
 // Settings
 var explosionPoolCount = 30;
 var enemyBulletsPoolCount = 30;
@@ -139,6 +140,10 @@ function create() {
     boucingBullets = game.add.group();
     boucingBullets.enableBody = true;
     boucingBullets.physicsBodyType = Phaser.Physics.ARCADE;
+    
+    stupidBurgers = game.add.group();
+    stupidBurgers.enableBody = true;
+    stupidBurgers.physicsBodyType = Phaser.Physics.ARCADE;
 
     game.input.onTap.addOnce(actuallyStartGame, this);
     game.input.keyboard.onDownCallback = actuallyStartGame;
@@ -229,6 +234,10 @@ function actuallyStartGame() {
     boucingBullets.setAll('checkWorldBounds', false);
     boucingBullets.setAll('angle', 180);
 
+    stupidBurgers.createMultiple(30, 'burger');
+    stupidBurgers.setAll('anchor.x', 0.5);
+    stupidBurgers.setAll('anchor.y', 0.5);
+
     bullets.createMultiple(bulletsPoolCount, 'bullet');
     bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 1);
@@ -317,9 +326,13 @@ function update() {
         {
             fireBullet();
         }
-
+        game.debug.text( "", 100, 380 );
         if(level > foodCount) {
-            if (game.time.now > foodTimer) {
+            someBurgerExists = stupidBurgers.getFirstAlive();
+            if(someBurgerExists){
+                foodTimer = game.time.now + pickRandomDelay();
+            }
+            if(game.time.now > foodTimer) {
                 foodPopper();
             }
         }
@@ -348,7 +361,7 @@ function update() {
         game.physics.arcade.overlap(bullets, hearts, collisionHandler, null, this);
         game.physics.arcade.overlap(heartBullets, player, enemyHitsPlayer, null, this);
         game.physics.arcade.overlap(boucingBullets, player, specialBulletHitsPlayer, null, this);
-        game.physics.arcade.overlap(player, food, playerEatsFood, null, this);
+        game.physics.arcade.overlap(player, stupidBurgers, playerEatsFood, null, this);
     }
 
 }
@@ -440,8 +453,8 @@ function enemyHitsPlayer (player,bullet) {
 
 }
 
-function playerEatsFood () {
-    food.kill();
+function playerEatsFood (p, currentBurger) {
+    currentBurger.kill();
     var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#ff0' });
     var tween = game.add.tween(txt).to( { y: player.body.y - 50, x: player.body.x + 20, alpha: 1 }, 2000, Phaser.Easing.Linear.Out, true);
     tween.onComplete.add(function() { 
@@ -469,20 +482,22 @@ function fadeYosi() {
 }
 
 function foodPopper() {
-    foodCount++;
-    food = game.add.sprite(game.rnd.integerInRange(50, game.width-20), 50, 'food');
-    food.scale.setTo(0.75, 0.75);
-    
-    game.physics.enable(food, Phaser.Physics.ARCADE);
-    
-    var tween = game.add.tween(food.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(fadeFood, this);
-    foodTimer = game.time.now + pickRandomDelay();
+    burger = stupidBurgers.getFirstExists(false);
+    if (burger)
+    {
+        burger.reset(game.rnd.integerInRange(50, game.width-20), 50);
+        var tween = game.add.tween(burger.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
+        tween.onComplete.add(function() { 
+            burger.lifespan = 4000; 
+            foodTimer = game.time.now + pickRandomDelay(); 
+            foodCount++; }, this);
+    }
 }
 
-function fadeFood() {
-    var tween = game.add.tween(food).to( { alpha: 0 }, 4000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function () { food.kill(); }, this);
+function fadeFood(currentBurger) {
+    var tween = game.add.tween(currentBurger).to( { alpha: 0 }, 3000, Phaser.Easing.Linear.None, true);
+    tween.onComplete.add(function () { currentBurger.kill(); }, this);
+    foodTimer = game.time.now + pickRandomDelay();
 }
 
 function getHighScore() {
