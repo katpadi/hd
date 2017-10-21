@@ -12,13 +12,12 @@ WebFontConfig = {
 function preload() {
     //  Load the Google WebFont Loader script
     game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
-    game.load.image('bullet', 'assets/fiyah.png');
+    game.load.image('bullet', 'assets/default-bullet.png');
     game.load.image('yosi', 'assets/cigarette.png');
     game.load.image('blueBullet', 'assets/bullet.png');
     game.load.image('heartBullet', 'assets/heart.png');
     game.load.image('boucingBullet', 'assets/broccoli.png');
     game.load.spritesheet('invader', 'assets/hearts.png', 31, 31);
-    game.load.image('ship', 'assets/pig_chef.png');
     game.load.spritesheet('piggy', 'assets/hd_pig_01.png', 32, 32);
     game.load.image('burger', 'assets/burger.png');
     game.load.spritesheet('kaboom', 'assets/explode.png', 128, 128);
@@ -66,7 +65,7 @@ var cursorVelocity = 200;
 
 var foodCount = 0;
 var foodTimer = 9999;
-var foodEatenText;
+
 var gameStarted = false; 
 var highScore = getHighScore();
 var highScoreText = '';
@@ -298,9 +297,7 @@ function setupPigExplosion (pig) {
 }
 
 function descend() {
-
     hearts.y += 10;
-
 }
 
 function update() {
@@ -323,10 +320,10 @@ function update() {
 
         //  Firing?
         if (fireButton.isDown)
-        {
+        {   
             fireBullet();
         }
-        game.debug.text( "", 100, 380 );
+
         if(level > foodCount) {
             someBurgerExists = stupidBurgers.getFirstAlive();
             if(someBurgerExists){
@@ -388,7 +385,7 @@ function collisionHandler (bullet, alien) {
         score += 1000;
         scoreText.text = scoreString + score;
 
-        stateText.text = "Gratz!\nYou're an awesome heartbreaker!\n\nClick or Press Up to level up.";
+        stateText.text = "Gratz!\nYou're a real heartbreaker!\n\nClick or Press Up to level up.";
         stateText.visible = true;
 
         heartBullets.forEach(function (c) { c.kill(); });
@@ -455,7 +452,7 @@ function enemyHitsPlayer (player,bullet) {
 
 function playerEatsFood (p, currentBurger) {
     currentBurger.kill();
-    var txt = game.add.text(player.body.x + 15, player.body.y + 25, '+50', { font: '10px Press Start 2P', fill: '#ff0' });
+    var txt = game.add.text(player.body.x + 15, player.body.y - 20, '+50', { font: '10px Press Start 2P', fill: '#ff0' });
     var tween = game.add.tween(txt).to( { y: player.body.y - 50, x: player.body.x + 20, alpha: 1 }, 2000, Phaser.Easing.Linear.Out, true);
     tween.onComplete.add(function() { 
         txt.visible = false; 
@@ -466,38 +463,18 @@ function playerEatsFood (p, currentBurger) {
 
 }
 
-function yosiPopper() {
-    yosiCount++;
-    yosi = game.add.sprite(game.rnd.integerInRange(50, game.width-10), 50, 'yosi');
-    game.physics.enable(yosi, Phaser.Physics.ARCADE);
-    
-    var tween = game.add.tween(yosi.body).to( { y: player.body.y }, 1000, Phaser.Easing.Exponential.None, true);
-    tween.onComplete.add(fadeYosi, this);
-    
-    yosiTimer = game.time.now + pickRandomDelay();
-}
-function fadeYosi() {
-    var tween = game.add.tween(food).to( { alpha: 0 }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function () { yosi.kill(); }, this);
-}
-
 function foodPopper() {
     burger = stupidBurgers.getFirstExists(false);
     if (burger)
-    {
+    {   
+        burger.lifespan = 5000; // Just longer than tween life. Will be reset by onComplete anyway
         burger.reset(game.rnd.integerInRange(50, game.width-20), 50);
         var tween = game.add.tween(burger.body).to( { y: player.body.y }, 3000, Phaser.Easing.Linear.None, true);
         tween.onComplete.add(function() { 
-            burger.lifespan = 4000; 
+            burger.lifespan = 4000; // Upon landing, set lifespan again.
             foodTimer = game.time.now + pickRandomDelay(); 
             foodCount++; }, this);
     }
-}
-
-function fadeFood(currentBurger) {
-    var tween = game.add.tween(currentBurger).to( { alpha: 0 }, 3000, Phaser.Easing.Linear.None, true);
-    tween.onComplete.add(function () { currentBurger.kill(); }, this);
-    foodTimer = game.time.now + pickRandomDelay();
 }
 
 function getHighScore() {
@@ -516,7 +493,7 @@ function gameOver() {
     heartBullets.forEach(function (c) { c.kill(); });
     boucingBullets.forEach(function (c) { c.kill(); });
 
-    stateText.text="YOU SUCK.\n\nClick to restart.";
+    stateText.text="Game Over\n\nClick to restart.";
     stateText.visible = true;
 
     if(score > getHighScore()){
@@ -591,8 +568,8 @@ function fireBullet () {
         //  Grab the first bullet we can from the pool
         if(normalBulletFlag) {
             bullet = bullets.getFirstExists(false);
-            bullet.angle = -90;
         }
+        // TODO
         else {
             bullet = blueBullets.getFirstExists(false);
         }
